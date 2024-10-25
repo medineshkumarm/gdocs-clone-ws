@@ -1,43 +1,32 @@
+const express = require("express");
+const http = require("http");
 const mongoose = require("mongoose");
 require("dotenv").config();
-
-const Document = require("./document");
-
-const MONGODB_URI = process.env.MONGODB_URI;
-mongoose
-  .connect(MONGODB_URI)
-  .then((res) => console.log("db connected"))
-  .catch((err) => console.log(err));
-
-const io = require("socket.io")(3001, {
+const app = express();
+const server = http.createServer(app);
+const io = require("socket.io")(server, {
   cors: {
     origin: "http://localhost:5173",
     methods: ["GET", "POST"],
   },
 });
 
-const defaultValue = "";
+// Connect to MongoDB
+const MONGODB_URI = process.env.MONGODB_URI;
+mongoose
+  .connect(MONGODB_URI)
+  .then(() => console.log("Database connected"))
+  .catch((err) => console.log("Database connection error:", err));
 
+// Socket.io events for real-time chat
 io.on("connection", (socket) => {
-  socket.on("get-document", async (documentId) => {
-    const document = await findOrCreateDocument(documentId);
-    socket.join(documentId);
-    socket.emit("load-document", document.data);
+  socket.on("join-room", (roomId) => {
+    socket.join(roomId);
+  });
 
-    socket.on("send-changes", (delta) => {
-      socket.broadcast.to(documentId).emit("receive-changes", delta);
-    });
-
-    socket.on("save-document", async (data) => {
-      await Document.findByIdAndUpdate(documentId, { data });
-    });
+  socket.on("send-message", ({ roomId, content }) => {
+    socket.to(roomId).emit("receive-message", { content });
   });
 });
 
-async function findOrCreateDocument(id) {
-  if (id == null) return;
-
-  const document = await Document.findById(id);
-  if (document) return document;
-  return await Document.create({ _id: id, data: defaultValue });
-}
+server.listen(3001, () => console.log("Server running on port 3001"));

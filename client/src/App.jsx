@@ -1,4 +1,4 @@
-import TextEditor from "./TextEditor";
+import ChatRoom from "./ChatRoom";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,9 +13,9 @@ const App = () => {
       <Routes>
         <Route
           path="/"
-          element={<Navigate to={`/documents/${uuidV4()}`} replace />}
+          element={<Navigate to={`/rooms/${uuidV4()}`} replace />}
         />
-        <Route path="/documents/:id" element={<TextEditor />} />
+        <Route path="/rooms/:id" element={<ChatRoom />} />
       </Routes>
     </Router>
   );
